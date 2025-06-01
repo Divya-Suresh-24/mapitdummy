@@ -9,7 +9,7 @@ import io
 # Load Data
 @st.cache_data
 def load_data():
-    return pd.read_csv("course.csv")
+    return pd.read_csv("courses.csv")
 
 df = load_data()
 
