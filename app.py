@@ -83,7 +83,7 @@ if selected_course:
         objective_numbers = np.reshape(np.arange(1, 16), (3, 5))
 
         fig, ax = plt.subplots(figsize=(12, 6))
-        cmap = plt.cm.magma_r
+        cmap = sns.light_palette("seagreen", as_cmap=True)
         heatmap = ax.imshow(matrix, cmap=cmap)
 
         # Annotations
