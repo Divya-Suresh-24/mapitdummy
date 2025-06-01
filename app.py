@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
 # ---- PAGE SETTINGS ----
 st.set_page_config(page_title="Competency Mapping", layout="wide")
@@ -56,19 +57,29 @@ if selected_course:
         course_name = course_row.iloc[0]["Course Name"]
         st.markdown(f"### 🔎 {course_code} — {course_name}")
 
-        data = course_row[objective_cols].iloc[0]
+        # Extract values and reshape
+        data = course_row[objective_cols].iloc[0].values.astype(float)
         obj_labels = [f"Obj {i}" for i in range(1, 16)]
 
-        # Draw heatmap
-        fig, ax = plt.subplots(figsize=(12, 1.5))
+        # 3x5 matrix reshape
+        matrix_data = np.reshape(data, (3, 5))
+        label_matrix = np.reshape(obj_labels, (3, 5))
+
+        fig, ax = plt.subplots(figsize=(8, 5))
+
+        # Create diverging red-blue heatmap
         sns.heatmap(
-            [data.values],
-            cmap="YlGnBu",
+            matrix_data,
             annot=True,
             fmt=".1f",
-            xticklabels=obj_labels,
-            yticklabels=["% Met"],
-            cbar=True
+            cmap="RdBu_r",
+            linewidths=0.5,
+            linecolor='black',
+            square=True,
+            cbar_kws={'label': '% Objective Met'},
+            xticklabels=[f"Obj {i}" for i in range(1, 6)],
+            yticklabels=[f"Row {i}" for i in range(1, 4)]
         )
-        plt.xticks(rotation=45, ha='right')
+
+        ax.set_title("Course Competency Heatmap", fontsize=14)
         st.pyplot(fig)
