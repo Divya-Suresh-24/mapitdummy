@@ -53,6 +53,20 @@ if selected_year != "All":
 if selected_sem != "All":
     filtered_df = filtered_df[filtered_df["Semester"] == selected_sem]
 
+# ---------- Display Full Course Table ----------
+st.markdown("## 📋 Filtered Course List")
+
+# Format the dataframe for display
+display_df = filtered_df.copy()
+display_df["Course Info"] = display_df["Course"] + " - " + display_df["Course Name"]
+display_df = display_df[["Course Info", "Year", "Semester"] + objective_cols]
+
+# Rename columns for display
+display_df.columns = ["Course", "Year", "Semester"] + [f"Obj {i}" for i in range(1, 16)]
+
+# Show in interactive table
+st.dataframe(display_df, use_container_width=True)
+
 # Course Selector
 course_options = [f"{row['Course']} - {row['Course Name']}" for _, row in filtered_df.iterrows()]
 selected_courses = st.multiselect("Select Course(s)", options=course_options, default=course_options[:1])
