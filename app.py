@@ -3,56 +3,86 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# ---- Load Data ----
+# ----- PAGE CONFIG -----
+st.set_page_config(page_title="Competency Mapping", layout="wide")
+
+# ----- DATA LOADING -----
 @st.cache_data
 def load_data():
-    df = pd.read_csv("c/Users/divyas/Documents/MapIT/website/courses.csv")
+    df = pd.read_csv("courses.csv")
     return df
 
 df = load_data()
 
-# ---- Sidebar Filters ----
-st.set_page_config(page_title="Course Competency Map", layout="wide")
-st.title("📘 Course Competency Mapping Tool")
+# ----- UI HEADER -----
+st.title("📘 Competency Objective Mapping Tool")
+st.markdown("Explore how each course aligns with 15 competency objectives using filters and heatmaps.")
 
-st.markdown("Use the filters below to explore which courses meet which competency objectives.")
+# ----- FILTERS -----
+st.sidebar.header("🔍 Filter Courses")
+search_query = st.sidebar.text_input("Search by Course or Name")
+year_options = sorted(df["Year"].unique().tolist())
+semester_options = sorted(df["Semester"].unique().tolist())
 
-search_query = st.text_input("🔍 Search Course")
-year_filter = st.selectbox("📅 Select Year", options=["All"] + sorted(df["Year"].unique().tolist()))
-semester_filter = st.selectbox("📚 Select Semester", options=["All"] + sorted(df["Semester"].unique().tolist()))
-if st.button("Clear Filters"):
+year = st.sidebar.selectbox("Year", options=["All"] + year_options)
+semester = st.sidebar.selectbox("Semester", options=["All"] + semester_options)
+
+# Clear button
+if st.sidebar.button("Clear Filters"):
     st.experimental_rerun()
 
-# ---- Filter Logic ----
+# ----- FILTER LOGIC -----
 filtered_df = df.copy()
+
 if search_query:
-    filtered_df = filtered_df[filtered_df["Course"].str.contains(search_query, case=False)]
+    filtered_df = filtered_df[
+        filtered_df["Course"].str.contains(search_query, case=False) |
+        filtered_df["Course Name"].str.contains(search_query, case=False)
+    ]
 
-if year_filter != "All":
-    filtered_df = filtered_df[filtered_df["Year"] == year_filter]
+if year != "All":
+    filtered_df = filtered_df[filtered_df["Year"] == year]
 
-if semester_filter != "All":
-    filtered_df = filtered_df[filtered_df["Semester"] == semester_filter]
+if semester != "All":
+    filtered_df = filtered_df[filtered_df["Semester"] == semester]
 
-# ---- Main Table ----
-st.subheader("📋 Courses Table")
-st.write("Click a course name below to see its heatmap of competency objectives.")
+# ----- DISPLAY TABLE -----
+st.subheader("📋 Filtered Course List")
 
 for _, row in filtered_df.iterrows():
-    course_link = f"[{row['Course']}](?course={row['Course']})"
-    st.markdown(f"**{course_link}** — Year: {row['Year']}, Semester: {row['Semester']}")
+    course_id = row['Course']
+    course_name = row['Course Name']
+    year = row['Year']
+    sem = row['Semester']
+    link = f"[{course_id} - {course_name}](?course={course_id})"
+    st.markdown(f"**{link}** — Year {year}, Semester {sem}")
 
-# ---- Detail Page via URL Parameter ----
+# ----- HEATMAP SECTION -----
 query_params = st.experimental_get_query_params()
 if "course" in query_params:
-    course_name = query_params["course"][0]
-    st.header(f"🔎 Competency Heatmap for {course_name}")
-    course_row = df[df["Course"] == course_name]
+    course_id = query_params["course"][0]
+    course_row = df[df["Course"] == course_id]
+
     if course_row.empty:
         st.error("Course not found.")
     else:
-        data = course_row.iloc[0, 3:]  # only the objective columns
-        fig, ax = plt.subplots(figsize=(10, 1))
-        sns.heatmap([data], cmap="YlGnBu", cbar=True, annot=True, fmt=".2f", xticklabels=data.index, yticklabels=["% Met"])
+        course_name = course_row.iloc[0]["Course Name"]
+        st.header(f"📊 Competency Heatmap — {course_id}: {course_name}")
+
+        # Extract objective columns (columns 5 onward)
+        objective_data = course_row.iloc[0, 4:]
+        obj_labels = [f"Objective {i}" for i in range(1, 16)]
+
+        # Plot heatmap
+        fig, ax = plt.subplots(figsize=(12, 1.5))
+        sns.heatmap(
+            [objective_data.values],
+            annot=True,
+            cmap="YlGnBu",
+            xticklabels=obj_labels,
+            yticklabels=["% Met"],
+            cbar=True,
+            fmt=".1f"
+        )
         plt.xticks(rotation=45, ha='right')
         st.pyplot(fig)
