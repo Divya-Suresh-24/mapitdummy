@@ -1,18 +1,12 @@
 import streamlit as st
+st.set_page_config(page_title="Competency Mapping", layout="wide")  # Must be first Streamlit command
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 import numpy as np
 import io
-
-# Load Data
-@st.cache_data
-def load_data():
-    return pd.read_csv("courses.csv")
-
-df = load_data()
-st.write("CSV Columns:", df.columns.tolist())
 
 # Constants
 objective_cols = [str(i) for i in range(1, 16)]
@@ -34,17 +28,29 @@ objective_descriptions = {
     15: "Manage records with legal/professional standards"
 }
 
-# UI
-st.set_page_config(page_title="Competency Mapping", layout="wide")
+# Load Data
+@st.cache_data
+def load_data():
+    df = pd.read_csv("courses.csv")
+    df.columns = df.columns.str.strip()  # Clean column names
+    df["VM Term"] = df["VM Term"].astype(str).str.strip()
+    df["Course Type"] = df["Course Type"].astype(str).str.strip()
+    return df
+
+df = load_data()
+
+# Title
 st.title("📘 Competency Objective Mapping Tool")
 st.markdown("Explore how each course aligns with 15 competency objectives using filters and heatmaps.")
 
 # Theme Toggle
 theme = st.radio("Choose Theme", ["Light", "Dark"], horizontal=True)
+cmap = sns.light_palette("seagreen", as_cmap=True) if theme == "Light" else sns.dark_palette("purple", reverse=True, as_cmap=True)
 
-# Filters (UPDATED)
-vm_terms = sorted(df["VM Term"].unique())
-course_types = sorted(df["Course Type"].unique())
+# Filters
+vm_terms = sorted(df["VM Term"].dropna().unique())
+course_types = sorted(df["Course Type"].dropna().unique())
+
 selected_term = st.selectbox("Filter by VM Term", options=["All"] + vm_terms)
 selected_type = st.selectbox("Filter by Course Type", options=["All"] + course_types)
 
@@ -54,29 +60,17 @@ if selected_term != "All":
 if selected_type != "All":
     filtered_df = filtered_df[filtered_df["Course Type"] == selected_type]
 
-# ---------- Display Full Course Table ----------
+# Display Filtered Table
 st.markdown("## 📋 Filtered Course List")
-
-# Format the dataframe for display
 display_df = filtered_df.copy()
 display_df["Course Info"] = display_df["Course"] + " - " + display_df["Course Name"]
 display_df = display_df[["Course Info", "VM Term", "Course Type"] + objective_cols]
-
-# Rename columns for display
 display_df.columns = ["Course", "VM Term", "Course Type"] + [f"Obj {i}" for i in range(1, 16)]
-
-# Show in interactive table
 st.dataframe(display_df, use_container_width=True)
 
 # Course Selector
 course_options = [f"{row['Course']} - {row['Course Name']}" for _, row in filtered_df.iterrows()]
 selected_courses = st.multiselect("Select Course(s)", options=course_options, default=course_options[:1])
-
-# Choose colormap
-if theme == "Light":
-    cmap = sns.light_palette("seagreen", as_cmap=True)
-else:
-    cmap = sns.dark_palette("purple", reverse=True, as_cmap=True)
 
 # Render Heatmaps
 for course in selected_courses:
@@ -93,7 +87,7 @@ for course in selected_courses:
     fig, ax = plt.subplots(figsize=(7, 5))
     im = ax.imshow(matrix, cmap=cmap, vmin=0, vmax=100)
 
-    # Annotate each cell
+    # Annotate cells
     for i in range(3):
         for j in range(5):
             obj = obj_numbers[i, j]
@@ -105,19 +99,16 @@ for course in selected_courses:
     ax.set_yticks([])
     ax.set_title("Course Competency Objective Mapping", fontsize=13)
 
-    # Legend (only for first course)
-    legend_patches = []
-    for i in range(1, 16):
-        color = cmap(data[i - 1] / 100)
-        patch = mpatches.Patch(color=color, label=f"{i}. {objective_descriptions[i]}")
-        legend_patches.append(patch)
-
+    # Legend
+    legend_patches = [
+        mpatches.Patch(color=cmap(data[i] / 100), label=f"{i+1}. {objective_descriptions[i+1]}")
+        for i in range(15)
+    ]
     ax.legend(handles=legend_patches, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=7)
 
-    # Show plot
     st.pyplot(fig)
 
-    # PNG Download
+    # Download
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight")
     st.download_button(
