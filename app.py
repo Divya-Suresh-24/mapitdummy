@@ -12,6 +12,7 @@ def load_data():
     return pd.read_csv("courses.csv")
 
 df = load_data()
+st.write("CSV Columns:", df.columns.tolist())
 
 # Constants
 objective_cols = [str(i) for i in range(1, 16)]
