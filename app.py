@@ -41,17 +41,17 @@ st.markdown("Explore how each course aligns with 15 competency objectives using 
 # Theme Toggle
 theme = st.radio("Choose Theme", ["Light", "Dark"], horizontal=True)
 
-# Filters
-years = sorted(df["Year"].unique())
-semesters = sorted(df["Semester"].unique())
-selected_year = st.selectbox("Filter by Year", options=["All"] + years)
-selected_sem = st.selectbox("Filter by Semester", options=["All"] + semesters)
+# Filters (UPDATED)
+vm_terms = sorted(df["VM Term"].unique())
+course_types = sorted(df["Course Type"].unique())
+selected_term = st.selectbox("Filter by VM Term", options=["All"] + vm_terms)
+selected_type = st.selectbox("Filter by Course Type", options=["All"] + course_types)
 
 filtered_df = df.copy()
-if selected_year != "All":
-    filtered_df = filtered_df[filtered_df["Year"] == selected_year]
-if selected_sem != "All":
-    filtered_df = filtered_df[filtered_df["Semester"] == selected_sem]
+if selected_term != "All":
+    filtered_df = filtered_df[filtered_df["VM Term"] == selected_term]
+if selected_type != "All":
+    filtered_df = filtered_df[filtered_df["Course Type"] == selected_type]
 
 # ---------- Display Full Course Table ----------
 st.markdown("## 📋 Filtered Course List")
@@ -59,10 +59,10 @@ st.markdown("## 📋 Filtered Course List")
 # Format the dataframe for display
 display_df = filtered_df.copy()
 display_df["Course Info"] = display_df["Course"] + " - " + display_df["Course Name"]
-display_df = display_df[["Course Info", "Year", "Semester"] + objective_cols]
+display_df = display_df[["Course Info", "VM Term", "Course Type"] + objective_cols]
 
 # Rename columns for display
-display_df.columns = ["Course", "Year", "Semester"] + [f"Obj {i}" for i in range(1, 16)]
+display_df.columns = ["Course", "VM Term", "Course Type"] + [f"Obj {i}" for i in range(1, 16)]
 
 # Show in interactive table
 st.dataframe(display_df, use_container_width=True)
