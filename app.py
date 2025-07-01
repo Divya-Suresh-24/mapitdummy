@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 import numpy as np
+import squarify 
 import io
 
 # Constants
@@ -84,7 +85,12 @@ for course in selected_courses:
     data = row[objective_cols].iloc[0].astype(float)
     labels = [f"{i+1}\n{data[i]:.1f}%" for i in range(15)]
     sizes = data.tolist()
-    colors = plt.cm.viridis(np.array(sizes) / 100)
+
+    # Use consistent color theme
+    if theme == "Light":
+        colors = sns.light_palette("seagreen", n_colors=15)
+    else:
+        colors = sns.dark_palette("purple", n_colors=15, reverse=True)
 
     fig, ax = plt.subplots(figsize=(10, 6))
     squarify.plot(sizes=sizes, label=labels, color=colors, alpha=0.85, ax=ax, text_kwargs={'fontsize':10})
