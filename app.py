@@ -72,49 +72,34 @@ st.dataframe(display_df, use_container_width=True)
 course_options = [f"{row['Course']} - {row['Course Name']}" for _, row in filtered_df.iterrows()]
 selected_courses = st.multiselect("Select Course(s)", options=course_options, default=course_options[:1])
 
-# Render Heatmaps
+# Render Treemaps
 for course in selected_courses:
     course_code = course.split(" - ")[0]
     row = df[df["Course"] == course_code]
     if row.empty:
         continue
 
-    st.markdown(f"### 🔍 {course}")
-    data = row[objective_cols].iloc[0].values.astype(float)
-    matrix = np.reshape(data, (3, 5))
-    obj_numbers = np.reshape(np.arange(1, 16), (3, 5))
+    st.markdown(f"### 🧭 {course} — Treemap View")
 
-    fig, ax = plt.subplots(figsize=(7, 5))
-    im = ax.imshow(matrix, cmap=cmap, vmin=0, vmax=100)
+    data = row[objective_cols].iloc[0].astype(float)
+    labels = [f"{i+1}\n{data[i]:.1f}%" for i in range(15)]
+    sizes = data.tolist()
+    colors = plt.cm.viridis(np.array(sizes) / 100)
 
-    # Annotate cells
-    for i in range(3):
-        for j in range(5):
-            obj = obj_numbers[i, j]
-            val = matrix[i, j]
-            ax.text(j, i, f"{obj}", va='center', ha='center', fontsize=11, fontweight='bold')
-            ax.text(j, i + 0.25, f"{val:.1f}", va='top', ha='center', fontsize=8)
-
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_title("Course Competency Objective Mapping", fontsize=13)
-
-    # Legend
-    legend_patches = [
-        mpatches.Patch(color=cmap(data[i] / 100), label=f"{i+1}. {objective_descriptions[i+1]}")
-        for i in range(15)
-    ]
-    ax.legend(handles=legend_patches, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=7)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    squarify.plot(sizes=sizes, label=labels, color=colors, alpha=0.85, ax=ax, text_kwargs={'fontsize':10})
+    ax.set_title("Course Competency Objective Treemap", fontsize=13)
+    ax.axis('off')
 
     st.pyplot(fig)
 
-    # Download
+    # Download treemap as PNG
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight")
     st.download_button(
-        label="📥 Download PNG",
+        label="📥 Download Treemap PNG",
         data=buf.getvalue(),
-        file_name=f"{course_code}_heatmap.png",
+        file_name=f"{course_code}_treemap.png",
         mime="image/png"
     )
     plt.close(fig)
